@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Adee's Birthday Challenge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* ====================== CONFIG ======================
+     Gaurab — edit these three lines before sending!
+     ANSWERS: index 0-3 = correct option index for quiz Q1-Q4
+     BIRTHDAY_MONTH: Adee's birthday month as a number, 1=Jan ... 12=Dec
+  ======================================================= */
+</style>
+<script>
+  window.GAME_CONFIG = {
+    quizAnswers: [1, 2, 0, 0], // Basketball / Centre Back / Random conversations / Me
+    birthdayMonth: 9           // September
+  };
+</script>
+<style>
+  :root{
+    --bg-1:#170B2E;
+    --bg-2:#2C1152;
+    --pink:#FF4FA3;
+    --pink-deep:#D6207C;
+    --yellow:#FFCB3D;
+    --mint:#3FE8C7;
+    --ink:#FFF6EC;
+    --ink-dim:#C8BEDD;
+    --card:#241141;
+    --card-2:#2E1653;
+    --line:rgba(255,255,255,0.10);
+    --shadow-pink: 0 20px 60px -15px rgba(255,79,163,0.45);
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;height:100%;
+    font-family:'Nunito',sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(60% 50% at 15% 10%, rgba(255,79,163,0.20), transparent 60%),
+      radial-gradient(50% 40% at 90% 85%, rgba(63,232,199,0.16), transparent 60%),
+      linear-gradient(160deg, var(--bg-1), var(--bg-2));
+    overflow-x:hidden;
+  }
+  h1,h2,h3,.display{ font-family:'Fredoka',sans-serif; }
+
+  #blobs{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+  .blob{position:absolute;border-radius:50%;filter:blur(50px);opacity:0.35;animation:drift 22s ease-in-out infinite;}
+  .blob.b1{width:260px;height:260px;background:var(--pink);top:-60px;left:-60px;animation-delay:0s;}
+  .blob.b2{width:320px;height:320px;background:var(--mint);bottom:-100px;right:-80px;animation-delay:-8s;}
+  .blob.b3{width:200px;height:200px;background:var(--yellow);bottom:20%;left:-60px;animation-delay:-14s;}
+  @keyframes drift{
+    0%,100%{ transform:translate(0,0) scale(1); }
+    50%{ transform:translate(30px,-25px) scale(1.08); }
+  }
+
+  #stage{
+    position:relative;z-index:1;
+    min-height:100vh;
+    display:flex;align-items:center;justify-content:center;
+    padding:28px 16px;
+  }
+
+  .console{
+    width:100%;max-width:440px;
+    background:linear-gradient(180deg,var(--card),var(--card-2));
+    border:1px solid var(--line);
+    border-radius:32px;
+    box-shadow:var(--shadow-pink);
+    padding:32px 26px 28px;
+    position:relative;
+    min-height:560px;
+    display:flex;flex-direction:column;
+  }
+
+  .screen{ display:none; flex-direction:column; flex:1; animation:pop .35s ease; }
+  .screen.active{ display:flex; }
+  @keyframes pop{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+
+  .eyebrow{
+    font-family:'Fredoka',sans-serif; font-weight:600; font-size:13px;
+    color:var(--mint); letter-spacing:0.3px; margin-bottom:6px;
+  }
+  h1.title{ font-size:26px; margin:0 0 10px; line-height:1.25; }
+  p.lead{ color:var(--ink-dim); font-size:15px; line-height:1.55; margin:0 0 18px; }
+
+  .btn{
+    font-family:'Fredoka',sans-serif; font-weight:600; font-size:16px;
+    border:none; border-radius:16px; padding:14px 20px;
+    background:var(--pink); color:#2A0A1C;
+    cursor:pointer; text-align:center;
+    box-shadow:0 10px 24px -8px rgba(255,79,163,0.55);
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .btn:active{ transform:scale(0.97); }
+  .btn.secondary{ background:transparent; color:var(--ink); border:1.5px solid var(--line); box-shadow:none; }
+  .btn.mint{ background:var(--mint); box-shadow:0 10px 24px -8px rgba(63,232,199,0.55); }
+  .btn.yellow{ background:var(--yellow); box-shadow:0 10px 24px -8px rgba(255,203,61,0.55); }
+  .btn[disabled]{ opacity:0.4; pointer-events:none; }
+  .btn-row{ margin-top:auto; display:flex; flex-direction:column; gap:10px; padding-top:18px; }
+
+  .badge{
+    display:inline-flex; align-items:center; gap:6px;
+    font-family:'Fredoka',sans-serif; font-size:13px; font-weight:600;
+    background:rgba(255,255,255,0.06); border:1px solid var(--line);
+    padding:6px 12px; border-radius:100px; color:var(--ink-dim);
+    align-self:flex-start; margin-bottom:16px;
+  }
+
+  .msg-box{
+    background:rgba(255,255,255,0.05); border:1px solid var(--line);
+    border-radius:16px; padding:16px; font-size:15px; line-height:1.5;
+    min-height:48px; display:flex; align-items:center; margin-bottom:16px;
+  }
+
+  /* ---------- LEVEL 1 ---------- */
+  .play-area{
+    position:relative; flex:1; min-height:260px;
+    background:rgba(0,0,0,0.18); border-radius:20px; border:1px solid var(--line);
+    overflow:hidden; margin-bottom:16px;
+  }
+  .target{
+    position:absolute; font-size:38px; line-height:1;
+    cursor:pointer; user-select:none; -webkit-user-select:none;
+    filter:drop-shadow(0 6px 10px rgba(0,0,0,0.4));
+    transition: top .28s ease, left .28s ease;
+  }
+  .hud-row{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+  .hud-pill{
+    font-family:'Fredoka',sans-serif; font-weight:600; font-size:14px;
+    background:rgba(255,255,255,0.06); padding:8px 14px; border-radius:100px;
+    border:1px solid var(--line);
+  }
+  .hud-pill.timer{ color:var(--yellow); }
+  .hud-pill.count{ color:var(--mint); }
+
+  /* ---------- LEVEL 2 ---------- */
+  .q-progress{ display:flex; gap:6px; margin-bottom:14px; }
+  .q-progress span{ flex:1; height:5px; border-radius:4px; background:rgba(255,255,255,0.12); }
+  .q-progress span.done{ background:var(--mint); }
+  .q-progress span.current{ background:var(--pink); }
+  .options{ display:flex; flex-direction:column; gap:10px; }
+  .opt{
+    text-align:left; padding:14px 16px; border-radius:14px;
+    background:rgba(255,255,255,0.05); border:1.5px solid var(--line);
+    color:var(--ink); font-family:'Nunito',sans-serif; font-size:15px; font-weight:700;
+    cursor:pointer; transition:all .15s ease;
+  }
+  .opt:hover{ border-color:var(--pink); }
+  .opt.picked{ background:rgba(255,79,163,0.18); border-color:var(--pink); }
+  .score-num{ font-family:'Fredoka',sans-serif; font-size:52px; margin:6px 0; color:var(--yellow); }
+
+  /* ---------- LEVEL 3 ---------- */
+  .clue{
+    background:rgba(255,255,255,0.05); border:1px solid var(--line);
+    border-radius:14px; padding:12px 14px; margin-bottom:10px; font-size:14px;
+  }
+  .clue b{ color:var(--mint); font-family:'Fredoka',sans-serif; }
+  .code-row{ display:flex; gap:12px; justify-content:center; margin:18px 0 6px; }
+  .code-digit{
+    width:56px; height:64px; border-radius:14px;
+    background:rgba(0,0,0,0.25); border:2px solid var(--line);
+    color:var(--ink); font-family:'Fredoka',sans-serif; font-size:26px;
+    text-align:center; outline:none;
+  }
+  .code-digit:focus{ border-color:var(--pink); }
+
+  /* ---------- LEVEL 4 ---------- */
+  .memory-grid{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
+    margin-bottom:14px;
+  }
+  .card{
+    aspect-ratio:1/1.05; border-radius:12px; cursor:pointer;
+    background:linear-gradient(160deg,#3A1B63,#2A1146);
+    border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;
+    font-size:26px; user-select:none;
+    transform-style:preserve-3d; transition:transform .3s ease, background .2s ease;
+  }
+  .card .face{ display:none; }
+  .card.flipped .back{ display:none; }
+  .card.flipped .face{ display:block; }
+  .card.matched{ background:rgba(63,232,199,0.18); border-color:var(--mint); cursor:default; }
+
+  /* ---------- FINAL ---------- */
+  .giftbox{
+    flex:1; display:flex; align-items:center; justify-content:center;
+    font-size:90px; cursor:pointer; position:relative; min-height:220px;
+  }
+  .giftbox.opened{ cursor:default; }
+  .msg-typewriter{
+    font-size:15px; line-height:1.7; color:var(--ink);
+    white-space:pre-wrap; min-height:170px;
+  }
+  .signature{ font-family:'Fredoka',sans-serif; color:var(--mint); margin-top:10px; font-size:15px; }
+
+  .confetti-layer, .balloon-layer, .star-layer{
+    position:fixed; inset:0; pointer-events:none; z-index:5; overflow:hidden;
+  }
+  .confetti-piece{
+    position:absolute; top:-20px; width:8px; height:14px; opacity:0.9;
+    animation:fall linear forwards;
+  }
+  @keyframes fall{
+    to{ transform:translateY(110vh) rotate(540deg); opacity:0.7; }
+  }
+  .balloon{
+    position:absolute; bottom:-80px; font-size:44px;
+    animation:rise 4.5s ease-in forwards;
+  }
+  @keyframes rise{
+    to{ transform:translateY(-115vh); opacity:0.85; }
+  }
+  .star-piece{
+    position:absolute; font-size:16px; color:var(--yellow); opacity:0;
+    animation:twinkle 1.8s ease forwards;
+  }
+  @keyframes twinkle{
+    0%{ opacity:0; transform:scale(0.4); }
+    50%{ opacity:1; transform:scale(1.1); }
+    100%{ opacity:0; transform:scale(0.9); }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .blob, .confetti-piece, .balloon, .star-piece, .target{ animation:none !important; transition:none !important; }
+  }
+
+  footer.hint{
+    text-align:center; font-size:12px; color:var(--ink-dim); opacity:0.6;
+    margin-top:14px;
+  }
+
+  .btn:focus-visible, .opt:focus-visible, .code-digit:focus-visible{
+    outline:2px solid var(--mint); outline-offset:2px;
+  }
+</style>
+</head>
+<body>
+
+<div id="blobs">
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
+</div>
+
+<div id="stage">
+  <div class="console">
+
+    <!-- START -->
+    <div class="screen active" id="screen-start">
+      <div class="badge">🎮 special mission</div>
+      <h1 class="title">🎂 Adee's Birthday Challenge 🎂</h1>
+      <p class="lead">Welcome, Adee. 👀<br>You've been selected for a very important mission.</p>
+      <div class="msg-box">🎯 Mission: complete 4 challenges.<br>🔓 Reward: unlock your special birthday surprise.<br>⚠️ Warning: there may be unnecessary amounts of chaos. 😂</div>
+      <div class="btn-row">
+        <button class="btn" onclick="goTo('l1-intro')">🚀 Start Challenge</button>
+      </div>
+    </div>
+
+    <!-- LEVEL 1 INTRO -->
+    <div class="screen" id="screen-l1-intro">
+      <div class="eyebrow">Level 1</div>
+      <h1 class="title">🎯 Catch the Chaos</h1>
+      <p class="lead">Something is about to run around this screen like it owes you money. Catch it <b>10 times</b> before the clock runs out.</p>
+      <div class="btn-row">
+        <button class="btn" onclick="startLevel1()">Let's go</button>
+      </div>
+    </div>
+
+    <!-- LEVEL 1 PLAY -->
+    <div class="screen" id="screen-l1-play">
+      <div class="hud-row">
+        <span class="hud-pill timer">⏱ <span id="l1-timer">15</span>s</span>
+        <span class="hud-pill count">🎯 <span id="l1-count">0</span>/10</span>
+      </div>
+      <div class="play-area" id="l1-area"></div>
+      <div class="msg-box" id="l1-msg">Okayyy, ready when you are 👀</div>
+    </div>
+
+    <!-- LEVEL 1 TIMEOUT -->
+    <div class="screen" id="screen-l1-timeout">
+      <div class="eyebrow">Level 1</div>
+      <h1 class="title">⏰ TIME'S UP!</h1>
+      <p class="lead">Brooo 😭 it was literally running around the screen! Don't worry, you get another chance. 😂</p>
+      <div class="btn-row">
+        <button class="btn" onclick="startLevel1()">🔄 Try Again</button>
+      </div>
+    </div>
+
+    <!-- LEVEL 1 COMPLETE -->
+    <div class="screen" id="screen-l1-complete">
+      <div class="eyebrow">Level 1 — Complete</div>
+      <h1 class="title">🎉 LEVEL 1 COMPLETE!</h1>
+      <p class="lead">One down. Three to go. 😈</p>
+      <div class="btn-row">
+        <button class="btn" onclick="goTo('l2-intro')">Next ➜</button>
+      </div>
+    </div>
+
+    <!-- LEVEL 2 INTRO -->
+    <div class="screen" id="screen-l2-intro">
+      <div class="eyebrow">Level 2</div>
+      <h1 class="title">🧠 Guess the Boy</h1>
+      <p class="lead">You've known this guy for approximately one week... let's see how much you've figured out. 👀</p>
+      <div class="btn-row">
+        <button class="btn" onclick="startLevel2()">Quiz me</button>
+      </div>
+    </div>
+
+    <!-- LEVEL 2 QUIZ -->
+    <div class="screen" id="screen-l2-quiz">
+      <div class="q-progress" id="l2-progress"></div>
+      <h1 class="title" id="l2-question" style="font-size:19px;"></h1>
+      <div class="options" id="l2-options"></div>
+    </div>
+
+    <!-- LEVEL 2 RESULT -->
+    <div class="screen" id="screen-l2-result">
+      <div class="eyebrow" id="l2-result-eyebrow">Level 2 — Score</div>
+      <div class="score-num" id="l2-score-num">0/4</div>
+      <h1 class="title" id="l2-result-title"></h1>
+      <p class="lead" id="l2-result-text"></p>
+      <div class="btn-row">
+        <button class="btn" id="l2-result-btn"></button>
+      </div>
+    </div>
+
+    <!-- LEVEL 3 INTRO -->
+    <div class="screen" id="screen-l3-intro">
+      <div class="eyebrow">Level 3</div>
+      <h1 class="title">🕵️ Security System Activated</h1>
+      <p class="lead">The birthday surprise is locked. You'll need to solve the clues to unlock it.</p>
+      <div class="clue"><b>Clue 1 —</b> How many letters are in ADEE?</div>
+      <div class="clue"><b>Clue 2 —</b> Which month is Adee's birthday? (as a number)</div>
+      <div class="clue"><b>Clue 3 —</b> when did I see you? (Date) and divide it by 2</div>
+      <div class="btn-row">
+        <button class="btn" onclick="goTo('l3-code')">Crack it</button>
+      </div>
+    </div>
+
+    <!-- LEVEL 3 CODE -->
+    <div class="screen" id="screen-l3-code">
+      <div class="eyebrow">Level 3</div>
+      <h1 class="title" style="font-size:20px;">🔢 Enter the Secret Code</h1>
+      <p class="lead" style="margin-bottom:4px;">Three digits. Use the clues.</p>
+      <div class="code-row">
+        <input class="code-digit" maxlength="1" inputmode="numeric" id="c0">
+        <input class="code-digit" maxlength="1" inputmode="numeric" id="c1">
+        <input class="code-digit" maxlength="1" inputmode="numeric" id="c2">
+      </div>
+      <div class="msg-box" id="l3-msg" style="display:none;"></div>
+      <div class="btn-row">
+        <button class="btn" onclick="checkCode()">🔓 Unlock</button>
+      </div>
+    </div>
+
+    <!-- LEVEL 4 INTRO -->
+    <div class="screen" id="screen-l4-intro">
+      <div class="eyebrow">Level 4</div>
+      <h1 class="title">🃏 Memory Mayhem</h1>
+      <p class="lead">Match all the pairs before the timer runs out! Good luck, Adee. 👀</p>
+      <div class="btn-row">
+        <button class="btn" onclick="startLevel4()">Start memory test</button>
+      </div>
+    </div>
+
+    <!-- LEVEL 4 PLAY -->
+    <div class="screen" id="screen-l4-play">
+      <div class="hud-row">
+        <span class="hud-pill timer">⏱ <span id="l4-timer">60</span>s</span>
+        <span class="hud-pill count">🧠 <span id="l4-count">0</span>/6</span>
+      </div>
+      <div class="memory-grid" id="l4-grid"></div>
+    </div>
+
+    <!-- LEVEL 4 TIMEOUT -->
+    <div class="screen" id="screen-l4-timeout">
+      <div class="eyebrow">Level 4</div>
+      <h1 class="title">⏰ TIME'S UP!</h1>
+      <p class="lead">Your brain needs a rematch. 😂 Give it another shot.</p>
+      <div class="btn-row">
+        <button class="btn" onclick="startLevel4()">🔄 Try Again</button>
+      </div>
+    </div>
+
+    <!-- LEVEL 4 COMPLETE -->
+    <div class="screen" id="screen-l4-complete">
+      <div class="eyebrow">Level 4 — Complete</div>
+      <h1 class="title">🧠 MEMORY UNLOCKED!</h1>
+      <p class="lead">Your brain survived. Respect. 😂🫡</p>
+      <div class="btn-row">
+        <button class="btn" onclick="goTo('final-lock')">🎁 Unlock Final Surprise</button>
+      </div>
+    </div>
+
+    <!-- FINAL LOCK -->
+    <div class="screen" id="screen-final-lock">
+      <div class="eyebrow">Final Level</div>
+      <h1 class="title">🔒 The Birthday Surprise</h1>
+      <p class="lead">You've completed every challenge. There's only one thing left to do... open the gift.</p>
+      <div class="giftbox" id="giftbox" onclick="openGift()">🎁</div>
+      <div class="btn-row">
+        <button class="btn yellow" onclick="openGift()">Open the Gift</button>
+      </div>
+    </div>
+
+    <!-- FINAL MESSAGE -->
+    <div class="screen" id="screen-final-message">
+      <div class="eyebrow">🎉 Happy Birthday, Adee 🎉</div>
+      <div class="msg-typewriter" id="typewriter"></div>
+      <div class="signature" id="signature" style="opacity:0;">— From your new friend, Gaurab 🫡</div>
+      <div class="btn-row" id="wish-row" style="display:none;">
+        <button class="btn mint" onclick="makeWish()">🎂 Make a Wish ✨</button>
+      </div>
+    </div>
+
+    <!-- WISH END -->
+    <div class="screen" id="screen-wish">
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
+        <div style="font-size:52px;margin-bottom:14px;">✨🎂✨</div>
+        <h1 class="title">Make a good one, Adee...</h1>
+        <p class="lead">It's your day. 💗🎂</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="confetti-layer" id="confetti-layer"></div>
+<div class="balloon-layer" id="balloon-layer"></div>
+<div class="star-layer" id="star-layer"></div>
+
+<script>
+const CFG = window.GAME_CONFIG;
+
+function goTo(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+}
+
+/* ================= LEVEL 1 ================= */
+let l1Timer, l1TimeLeft, l1Count, l1LastMissAt=0;
+const l1Emojis = ['🎯','😂','⭐','🔥'];
+
+function startLevel1(){
+  goTo('l1-play');
+  l1Count = 0; l1TimeLeft = 15;
+  document.getElementById('l1-count').textContent = 0;
+  document.getElementById('l1-timer').textContent = l1TimeLeft;
+  document.getElementById('l1-msg').textContent = "Okayyy, ready when you are 👀";
+  const area = document.getElementById('l1-area');
+  area.innerHTML = '';
+
+  const target = document.createElement('div');
+  target.className = 'target';
+  target.textContent = l1Emojis[0];
+  area.appendChild(target);
+  placeTargetRandom(target, area);
+
+  target.onclick = (e)=>{
+    e.stopPropagation();
+    l1Count++;
+    document.getElementById('l1-count').textContent = l1Count;
+    target.textContent = l1Emojis[Math.floor(Math.random()*l1Emojis.length)];
+    placeTargetRandom(target, area);
+    setL1Message(l1Count);
+    if (l1Count >= 10){
+      clearInterval(l1Timer);
+      setTimeout(()=>goTo('l1-complete'), 350);
+    }
+  };
+
+  area.onclick = ()=>{
+    const now = Date.now();
+    if (now - l1LastMissAt > 900){
+      l1LastMissAt = now;
+      document.getElementById('l1-msg').textContent = "HOW DID YOU MISS THAT 😭";
+    }
+  };
+
+  clearInterval(l1Timer);
+  l1Timer = setInterval(()=>{
+    l1TimeLeft--;
+    document.getElementById('l1-timer').textContent = l1TimeLeft;
+    if (l1TimeLeft <= 0){
+      clearInterval(l1Timer);
+      goTo('l1-timeout');
+    }
+  }, 1000);
+}
+
+function placeTargetRandom(target, area){
+  const w = area.clientWidth || 300;
+  const h = area.clientHeight || 260;
+  const tx = Math.random() * Math.max(w - 50, 40);
+  const ty = Math.random() * Math.max(h - 50, 40);
+  target.style.left = tx + 'px';
+  target.style.top = ty + 'px';
+}
+
+function setL1Message(n){
+  const msg = document.getElementById('l1-msg');
+  if (n === 1) msg.textContent = "Okayyy, you found it 👀";
+  else if (n === 3) msg.textContent = "Not bad...";
+  else if (n === 6) msg.textContent = "Okay Adee, you're actually cooking 🔥😂";
+  else if (n === 8) msg.textContent = "Almost there 👀";
+  else if (n === 10) msg.textContent = "🎉 LEVEL 1 COMPLETE!";
+}
+
+/* ================= LEVEL 2 ================= */
+const l2Questions = [
+  { q:"What's my main sport?", opts:["⚽ Football","🏀 Basketball","🏏 Cricket","🎮 Gaming"] },
+  { q:"What's my football position?", opts:["🥅 Goalkeeper","⚡ Striker","🛡️ Centre Back","🎯 Midfielder"] },
+  { q:"What usually happens when we start talking?", opts:["😂 Random conversations","📚 Serious discussions","😴 We disappear","🤯 Absolute chaos"] },
+  { q:"Who's more likely to send a completely random message?", opts:["👤 Me","👤 Adee","🤝 Both of us","🤷 Nobody"] }
+];
+let l2Index, l2Score, l2Picked;
+
+function startLevel2(){
+  l2Index = 0; l2Score = 0;
+  renderQuestion();
+  goTo('l2-quiz');
+}
+
+function renderQuestion(){
+  const data = l2Questions[l2Index];
+  document.getElementById('l2-question').textContent = data.q;
+  const optsWrap = document.getElementById('l2-options');
+  optsWrap.innerHTML = '';
+  l2Picked = false;
+  data.opts.forEach((label, i)=>{
+    const b = document.createElement('button');
+    b.className = 'opt';
+    b.textContent = label;
+    b.onclick = ()=>{
+      if (l2Picked) return;
+      l2Picked = true;
+      b.classList.add('picked');
+      if (i === CFG.quizAnswers[l2Index]) l2Score++;
+      setTimeout(()=>{
+        l2Index++;
+        if (l2Index < l2Questions.length){ renderQuestion(); }
+        else { showL2Result(); }
+      }, 380);
+    };
+    optsWrap.appendChild(b);
+  });
+
+  const progress = document.getElementById('l2-progress');
+  progress.innerHTML = '';
+  l2Questions.forEach((_, i)=>{
+    const seg = document.createElement('span');
+    if (i < l2Index) seg.className = 'done';
+    else if (i === l2Index) seg.className = 'current';
+    progress.appendChild(seg);
+  });
+}
+
+function showL2Result(){
+  document.getElementById('l2-score-num').textContent = l2Score + '/4';
+  const title = document.getElementById('l2-result-title');
+  const text = document.getElementById('l2-result-text');
+  const btn = document.getElementById('l2-result-btn');
+
+  if (l2Score === 4){
+    title.textContent = "WHAT?! 😭🔥";
+    text.textContent = "You've known me for ONE WEEK and already know me this well?! Okay... I'm impressed. 😂";
+    btn.textContent = "Next ➜";
+  } else if (l2Score === 3){
+    title.textContent = "Pretty good 👀";
+    text.textContent = "3/4! Not bad at all! Only one mistake... I'll let it slide. 😂";
+    btn.textContent = "Next ➜";
+  } else if (l2Score === 2){
+    title.textContent = "Half way there 💀";
+    text.textContent = "2/4?! Okay... we've definitely got some work to do. 😂 You've known me for a week and you're already failing the friendship exam. 💀 But I'll let you off easy. 😌";
+    btn.textContent = "Next ➜";
+  } else if (l2Score === 1){
+    title.textContent = "Uh oh 😭";
+    text.textContent = "1/4?! 😭😭 ADEE WHAT ARE YOU DOING 💀 Go back and study our conversations... but fine, moving on. 😂";
+    btn.textContent = "Next ➜";
+  } else {
+    title.textContent = "Absolute chaos 💀";
+    text.textContent = "0/4?! I have no words. 💀 We might need to restart the friendship tutorial... later. For now, let's go. 😂";
+    btn.textContent = "Next ➜";
+  }
+  btn.onclick = ()=>goTo('l3-intro');
+  goTo('l2-result');
+}
+
+/* ================= LEVEL 3 ================= */
+function checkCode(){
+  const c0 = document.getElementById('c0').value.trim();
+  const c1 = document.getElementById('c1').value.trim();
+  const c2 = document.getElementById('c2').value.trim();
+  const answer = ['4', String(CFG.birthdayMonth), '7'];
+  const msg = document.getElementById('l3-msg');
+  msg.style.display = 'flex';
+
+  if (c0 === answer[0] && c1 === answer[1] && c2 === answer[2]){
+    msg.textContent = "🔓 ACCESS GRANTED — okay detective... you actually figured it out. 🕵️‍♀️😂";
+    setTimeout(()=>goTo('l4-intro'), 900);
+  } else {
+    msg.textContent = "❌ ACCESS DENIED — nice try, detective. 😂 Check the clues again!";
+  }
+}
+
+// digit inputs: auto-advance
+['c0','c1','c2'].forEach((id, idx, arr)=>{
+  document.addEventListener('DOMContentLoaded', ()=>{
+    const el = document.getElementById(id);
+    el.addEventListener('input', ()=>{
+      el.value = el.value.replace(/[^0-9]/g,'').slice(0,1);
+      if (el.value && arr[idx+1]) document.getElementById(arr[idx+1]).focus();
+    });
+  });
+});
+
+/* ================= LEVEL 4 ================= */
+const l4Symbols = ['😂','⚽','🎂','⭐','🐼','🔥'];
+let l4Timer, l4TimeLeft, l4Matched, l4Flipped, l4Lock;
+
+function startLevel4(){
+  goTo('l4-play');
+  l4Matched = 0; l4Flipped = []; l4Lock = false;
+  l4TimeLeft = 60;
+  document.getElementById('l4-count').textContent = 0;
+  document.getElementById('l4-timer').textContent = l4TimeLeft;
+
+  let deck = [...l4Symbols, ...l4Symbols];
+  for (let i = deck.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+
+  const grid = document.getElementById('l4-grid');
+  grid.innerHTML = '';
+  deck.forEach(sym=>{
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `<span class="back">❓</span><span class="face">${sym}</span>`;
+    card.dataset.sym = sym;
+    card.onclick = ()=>flipCard(card);
+    grid.appendChild(card);
+  });
+
+  clearInterval(l4Timer);
+  l4Timer = setInterval(()=>{
+    l4TimeLeft--;
+    document.getElementById('l4-timer').textContent = l4TimeLeft;
+    if (l4TimeLeft <= 0){
+      clearInterval(l4Timer);
+      goTo('l4-timeout');
+    }
+  }, 1000);
+}
+
+function flipCard(card){
+  if (l4Lock || card.classList.contains('flipped') || card.classList.contains('matched')) return;
+  card.classList.add('flipped');
+  l4Flipped.push(card);
+  if (l4Flipped.length === 2){
+    l4Lock = true;
+    const [a, b] = l4Flipped;
+    if (a.dataset.sym === b.dataset.sym){
+      a.classList.add('matched'); b.classList.add('matched');
+      l4Matched++;
+      document.getElementById('l4-count').textContent = l4Matched;
+      l4Flipped = []; l4Lock = false;
+      if (l4Matched === 6){
+        clearInterval(l4Timer);
+        setTimeout(()=>goTo('l4-complete'), 400);
+      }
+    } else {
+      setTimeout(()=>{
+        a.classList.remove('flipped'); b.classList.remove('flipped');
+        l4Flipped = []; l4Lock = false;
+      }, 700);
+    }
+  }
+}
+
+/* ================= FINAL ================= */
+const finalMessage = `Happy Birthday, Adee! 🥳💗 You're like one of my closest friends, and I hope you always keep that beautiful smile and crazy energy. May this year bring you lots of happiness, success, and amazing memories 😭✨.
+
+And just one little piece of advice: choose your friends wisely and stay away from the fake ones. Some people can hurt you more than you expect... trust me, I know how that feels. 🫂❤️ You deserve people who genuinely care about you.
+
+Have the best birthday ever! 🎂✨`;
+
+function openGift(){
+  const box = document.getElementById('giftbox');
+  if (box.classList.contains('opened')) return;
+  box.classList.add('opened');
+  box.textContent = '✨🎁✨';
+  launchConfetti();
+  launchBalloons();
+  setTimeout(()=>{
+    goTo('final-message');
+    typewrite(finalMessage);
+  }, 700);
+}
+
+function typewrite(text){
+  const el = document.getElementById('typewriter');
+  const sig = document.getElementById('signature');
+  const wishRow = document.getElementById('wish-row');
+  el.textContent = '';
+  sig.style.opacity = 0;
+  wishRow.style.display = 'none';
+  let i = 0;
+  const speed = 18;
+  function step(){
+    if (i <= text.length){
+      el.textContent = text.slice(0, i);
+      i++;
+      setTimeout(step, speed);
+    } else {
+      sig.style.opacity = 1;
+      wishRow.style.display = 'flex';
+    }
+  }
+  step();
+}
+
+function makeWish(){
+  launchStars();
+  launchConfetti();
+  setTimeout(()=>goTo('wish'), 900);
+}
+
+/* ---- effects ---- */
+const confettiColors = ['#FF4FA3','#FFCB3D','#3FE8C7','#B084F5','#FFF6EC'];
+function launchConfetti(){
+  const layer = document.getElementById('confetti-layer');
+  for (let i = 0; i < 60; i++){
+    const p = document.createElement('div');
+    p.className = 'confetti-piece';
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.background = confettiColors[Math.floor(Math.random()*confettiColors.length)];
+    p.style.animationDuration = (2.2 + Math.random() * 1.6) + 's';
+    p.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    layer.appendChild(p);
+    setTimeout(()=>p.remove(), 4200);
+  }
+}
+function launchBalloons(){
+  const layer = document.getElementById('balloon-layer');
+  const emojis = ['🎈','🎈','🎈'];
+  for (let i = 0; i < 10; i++){
+    const b = document.createElement('div');
+    b.className = 'balloon';
+    b.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+    b.style.left = (5 + Math.random() * 90) + 'vw';
+    b.style.animationDuration = (3.6 + Math.random() * 2) + 's';
+    b.style.animationDelay = (Math.random() * 0.8) + 's';
+    layer.appendChild(b);
+    setTimeout(()=>b.remove(), 6000);
+  }
+}
+function launchStars(){
+  const layer = document.getElementById('star-layer');
+  const stars = ['✨','⭐','💫'];
+  for (let i = 0; i < 50; i++){
+    const s = document.createElement('div');
+    s.className = 'star-piece';
+    s.textContent = stars[Math.floor(Math.random()*stars.length)];
+    s.style.left = Math.random() * 100 + 'vw';
+    s.style.top = Math.random() * 100 + 'vh';
+    s.style.animationDelay = (Math.random() * 0.6) + 's';
+    layer.appendChild(s);
+    setTimeout(()=>s.remove(), 2600);
+  }
+}
+
+// init digit auto-advance without relying on DOMContentLoaded race
+(function initDigits(){
+  const ids = ['c0','c1','c2'];
+  ids.forEach((id, idx)=>{
+    const el = document.getElementById(id);
+    el.addEventListener('input', ()=>{
+      el.value = el.value.replace(/[^0-9]/g,'').slice(0,1);
+      if (el.value && ids[idx+1]) document.getElementById(ids[idx+1]).focus();
+    });
+  });
+})();
+</script>
+</body>
+</html>
